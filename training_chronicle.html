@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training Chronicle | Qwen3.6-35B-A3B Fine-Tuning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --glow-indigo: rgba(99, 102, 241, 0.15);
+    --glow-emerald: rgba(16, 185, 129, 0.15);
+    --glow-red: rgba(239, 68, 68, 0.12);
+    --glow-amber: rgba(245, 158, 11, 0.12);
+    --glow-violet: rgba(139, 92, 246, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #09090b;
+    color: #fafafa;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+  }
+
+  /* Ambient background */
+  .ambient-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 80% 50%, rgba(16, 185, 129, 0.04), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(99, 102, 241, 0.04), transparent 60%);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.15); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.25); }
+
+  /* Layout */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .header-left h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fafafa, #a1a1aa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-left .subtitle {
+    color: #71717a;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 5px 14px;
+    border-radius: 9999px;
+    border: 1px solid;
+  }
+  .badge-amber {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+  }
+  .badge-emerald {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+  }
+  .badge-red {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+  }
+  .badge-indigo {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: #a5b4fc;
+  }
+  .badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  /* Section heading */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #71717a;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Metric cards */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+  .metric-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    padding: 1.5rem;
+    transition: all 0.2s;
+  }
+  .metric-card:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+  }
+  .metric-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #71717a;
+    font-weight: 500;
+  }
+  .metric-card .value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    letter-spacing: -0.02em;
+    color: #fafafa;
+  }
+  .metric-card .detail {
+    font-size: 13px;
+    color: #52525b;
+    margin-top: 0.375rem;
+  }
+  .metric-card.alert .value { color: #f59e0b; }
+  .metric-card.alert::before {
+    background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.5), transparent);
+  }
+
+  /* Section cards */
+  .section-card {
+    border-radius: 1.25rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    backdrop-filter: blur(12px);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .section-card-header {
+    padding: 1.5rem 1.75rem 0;
+  }
+  .section-card-body {
+    padding: 1.5rem 1.75rem 1.75rem;
+  }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 960px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Decision Flow */
+  .flow-container {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding: 2rem 1rem;
+    justify-content: center;
+  }
+  .flow-node {
+    flex-shrink: 0;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.25rem;
+    font-size: 0.875rem;
+    text-align: center;
+    min-width: 155px;
+    max-width: 170px;
+    border: 1px solid;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .flow-node.fail {
+    border-color: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.04);
+  }
+  .flow-node.pass {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.06);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.1);
+  }
+  .flow-node strong {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e4e4ef;
+  }
+  .flow-node .flow-sub {
+    font-size: 0.8125rem;
+    color: #71717a;
+  }
+  .flow-node .flow-result {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .flow-arrow {
+    flex-shrink: 0;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3f3f46;
+    font-size: 1.5rem;
+  }
+
+  /* VRAM diagrams */
+  .vram-section {
+    padding: 0.5rem 0;
+  }
+  .vram-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.75rem;
+  }
+  .vram-header .vram-title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #a1a1aa;
+  }
+  .vram-header .vram-pct {
+    font-size: 0.8125rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: #52525b;
+  }
+  .vram-track {
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    overflow: hidden;
+  }
+  .vram-seg {
+    height: 100%;
+    transition: opacity 0.2s;
+  }
+  .vram-seg:hover { opacity: 0.85; }
+  .vram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+  .vram-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: #71717a;
+  }
+  .vram-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #3f3f46, #27272a 80%, transparent);
+    border-radius: 1px;
+  }
+  .tl-item {
+    position: relative;
+    padding: 0.625rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.625rem;
+    font-size: 0.9375rem;
+    background: rgba(255,255,255,0.02);
+    border-left: 3px solid #ef4444;
+    transition: background 0.15s;
+  }
+  .tl-item:hover { background: rgba(255,255,255,0.04); }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #18181b;
+    border: 2px solid #ef4444;
+  }
+  .tl-item.success { border-left-color: #10b981; }
+  .tl-item.success::before { border-color: #10b981; background: #10b981; }
+  .tl-item.pivot {
+    border-left-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.04);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    border-left: 3px solid #f59e0b;
+    padding: 0.875rem 1rem;
+  }
+  .tl-item.pivot::before { border-color: #f59e0b; background: #f59e0b; }
+  .tl-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    color: #71717a;
+    margin-right: 0.625rem;
+  }
+  .tl-error { font-size: 0.8125rem; color: #71717a; margin-top: 3px; }
+  .tl-success { font-size: 0.875rem; color: #34d399; margin-top: 3px; font-weight: 500; }
+
+  /* Reward bars */
+  .reward-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.875rem;
+  }
+  .reward-label {
+    width: 160px;
+    font-size: 0.8125rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: #a1a1aa;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .reward-track {
+    flex: 1;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+  .reward-fill {
+    height: 100%;
+    border-radius: 7px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .reward-value {
+    width: 50px;
+    font-size: 0.9375rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* Observation grid */
+  .obs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+  }
+  .obs-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .obs-card:hover { border-color: rgba(255,255,255,0.1); }
+  .obs-card h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-bottom: 0.625rem;
+    color: #e4e4ef;
+  }
+  .obs-card p {
+    font-size: 0.875rem;
+    color: #71717a;
+    line-height: 1.6;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    font-size: 0.9375rem;
+    border-collapse: collapse;
+  }
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #71717a;
+    text-align: left;
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  td {
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: #a1a1aa;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td code {
+    font-size: 0.8125rem;
+    background: rgba(99, 102, 241, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #a5b4fc;
+  }
+
+  /* Storage bar */
+  .storage-bar-outer {
+    height: 10px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.05);
+    overflow: hidden;
+    margin: 0.5rem 0 0.375rem;
+  }
+  .storage-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #6366f1, #818cf8);
+  }
+
+  /* Next steps */
+  .next-steps-list {
+    list-style: none;
+  }
+  .next-steps-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.9375rem;
+  }
+  .next-steps-list li:last-child { border-bottom: none; }
+  .step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a5b4fc;
+    margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { color: #e4e4ef; font-size: 0.9375rem; }
+  .step-content .step-meta {
+    font-size: 0.8125rem;
+    color: #52525b;
+    margin-top: 4px;
+  }
+
+  /* Callout box */
+  .callout {
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .callout-amber {
+    background: rgba(245, 158, 11, 0.04);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    color: #d97706;
+  }
+  .callout-emerald {
+    background: rgba(16, 185, 129, 0.04);
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    color: #059669;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    margin: 3rem 0;
+    border: none;
+  }
+
+  /* Pulse */
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .pulse { animation: pulse-glow 2s ease-in-out infinite; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 3rem 0 1rem;
+    font-size: 0.8125rem;
+    color: #3f3f46;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="ambient-bg"></div>
+<div class="container">
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <h1>Training Chronicle</h1>
+    <div class="subtitle">Qwen3.6-35B-A3B &middot; HPC fat partition &middot; Single NVIDIA B200</div>
+  </div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <span class="badge badge-emerald">
+      <span class="badge-dot" style="background: #34d399;"></span>
+      Training Complete
+    </span>
+  </div>
+</header>
+
+<!-- Key Metrics -->
+<div class="section-title">Overview</div>
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="label">Total Jobs</div>
+    <div class="value">26</div>
+    <div class="detail">22 failed &middot; 2 successful &middot; 2 cancelled</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">GPU-Hours</div>
+    <div class="value">0.82</div>
+    <div class="detail">B200 (fat) &middot; zero queue wait</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">SFT Final Loss</div>
+    <div class="value" style="color: #34d399;">1.29</div>
+    <div class="detail">from 2.57 &middot; token acc 68%</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">GRPO Steps</div>
+    <div class="value">12</div>
+    <div class="detail">4 gens/prompt &middot; 6 reward fns</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">Peak VRAM (GRPO)</div>
+    <div class="value">140 GB</div>
+    <div class="detail">76.5% of 183 GB usable</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">Session Time</div>
+    <div class="value">2h 45m</div>
+    <div class="detail">From first submit to final success</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- VRAM Diagrams -->
+<div class="section-title">VRAM Allocation</div>
+<div class="two-col" style="margin-bottom: 3rem;">
+  <div class="section-card">
+    <div class="section-card-header">
+      <span class="badge badge-emerald" style="font-size: 10px;">SFT &middot; 80 GB peak</span>
+    </div>
+    <div class="section-card-body">
+      <div class="vram-section">
+        <div class="vram-header">
+          <span class="vram-title">B200 &mdash; 183 GB usable</span>
+          <span class="vram-pct">43.6% used</span>
+        </div>
+        <div class="vram-track">
+          <div class="vram-seg" style="width: 36.6%; background: linear-gradient(135deg, #6366f1, #4f46e5);"></div>
+          <div class="vram-seg" style="width: 0.6%; background: #818cf8;"></div>
+          <div class="vram-seg" style="width: 4.4%; background: #3b82f6;"></div>
+          <div class="vram-seg" style="width: 2.2%; background: #06b6d4;"></div>
+          <div class="vram-seg" style="width: 56.2%; background: rgba(255,255,255,0.015);"></div>
+        </div>
+        <div class="vram-legend">
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #6366f1;"></div> Model BF16 (67 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #818cf8;"></div> LoRA (1 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #3b82f6;"></div> Activations (8 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #06b6d4;"></div> Optimizer (4 GB)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section-card">
+    <div class="section-card-header">
+      <span class="badge badge-indigo" style="font-size: 10px;">GRPO &middot; 140 GB peak</span>
+    </div>
+    <div class="section-card-body">
+      <div class="vram-section">
+        <div class="vram-header">
+          <span class="vram-title">B200 &mdash; 183 GB usable</span>
+          <span class="vram-pct">76.5% used</span>
+        </div>
+        <div class="vram-track">
+          <div class="vram-seg" style="width: 36.6%; background: linear-gradient(135deg, #6366f1, #4f46e5);"></div>
+          <div class="vram-seg" style="width: 0.6%; background: #818cf8;"></div>
+          <div class="vram-seg" style="width: 10.9%; background: #8b5cf6;"></div>
+          <div class="vram-seg" style="width: 4.4%; background: #3b82f6;"></div>
+          <div class="vram-seg" style="width: 4.4%; background: #06b6d4;"></div>
+          <div class="vram-seg" style="width: 43.1%; background: rgba(255,255,255,0.015);"></div>
+        </div>
+        <div class="vram-legend">
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #6366f1;"></div> Model BF16 (67 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #818cf8;"></div> LoRA (1 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #8b5cf6;"></div> Generations (20 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #3b82f6;"></div> Gradients (8 GB)</div>
+          <div class="vram-legend-item"><div class="vram-legend-dot" style="background: #06b6d4;"></div> Optimizer (8 GB)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Decision Flow -->
+<div class="section-title">Decision Flow &mdash; Why Each Pivot Happened</div>
+<div class="section-card" style="margin-bottom: 3rem;">
+  <div class="section-card-body">
+    <div class="flow-container">
+      <div class="flow-node fail">
+        <strong>QLoRA 4-bit</strong>
+        <span class="flow-sub">2&times;L40S</span>
+        <span class="flow-result" style="color: #f87171;">TRL API fail</span>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node fail">
+        <strong>FP8 Quant</strong>
+        <span class="flow-sub">TurboQuant</span>
+        <span class="flow-result" style="color: #f87171;">No backward</span>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node fail">
+        <strong>Fix 4-bit</strong>
+        <span class="flow-sub">128G RAM</span>
+        <span class="flow-result" style="color: #f87171;">NLL assertion</span>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node fail">
+        <strong>Debug NLL</strong>
+        <span class="flow-sub">Labels valid!</span>
+        <span class="flow-result" style="color: #f87171;">Arch bug</span>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-node pass">
+        <strong>B200 BF16</strong>
+        <span class="flow-sub">192 GB, no quant</span>
+        <span class="flow-result" style="color: #34d399;">71s &#10003;</span>
+      </div>
+    </div>
+    <p style="font-size: 0.875rem; color: #52525b; text-align: center; margin-top: 1rem;">
+      Root cause: <code>torch_chunk_gated_delta_rule</code> linear attention breaks gradient checkpointing across GPU boundaries
+    </p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Two-Phase Breakdown -->
+<div class="section-title">Phase Breakdown</div>
+<div class="two-col" style="margin-bottom: 3rem;">
+  <div class="section-card">
+    <div class="section-card-header">
+      <h2 style="font-size: 1.0625rem; font-weight: 600; color: #e4e4ef;">Phase 1: Failed Approaches</h2>
+      <p style="font-size: 0.8125rem; color: #52525b; margin-top: 6px;">110 minutes &middot; 22 failed jobs on L40S GPUs</p>
+    </div>
+    <div class="section-card-body">
+      <table>
+        <tr><th>Error Class</th><th>Jobs</th><th>Root Cause</th></tr>
+        <tr>
+          <td style="color: #e4e4ef;">TRL API</td>
+          <td class="mono" style="color: #a5b4fc;">2</td>
+          <td>TRL 1.3.0: <code>max_length</code> not <code>max_seq_length</code></td>
+        </tr>
+        <tr>
+          <td style="color: #e4e4ef;">CPU OOM</td>
+          <td class="mono" style="color: #a5b4fc;">3</td>
+          <td>67 GB model passes through CPU during 4-bit</td>
+        </tr>
+        <tr>
+          <td style="color: #e4e4ef;">GPU OOM</td>
+          <td class="mono" style="color: #a5b4fc;">4</td>
+          <td><code>prepare_model_for_kbit_training</code> upcasts</td>
+        </tr>
+        <tr>
+          <td style="color: #e4e4ef;">FP8 Dead End</td>
+          <td class="mono" style="color: #a5b4fc;">4</td>
+          <td>No autograd formula for FP8 matmul</td>
+        </tr>
+        <tr>
+          <td style="color: #f87171;">NLL Assertion</td>
+          <td class="mono" style="color: #fca5a5;">6</td>
+          <td>Linear attn + grad ckpt + multi-GPU</td>
+        </tr>
+        <tr>
+          <td style="color: #e4e4ef;">Misc</td>
+          <td class="mono" style="color: #a5b4fc;">3</td>
+          <td>Module dispatch, imports, paths</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div class="section-card">
+    <div class="section-card-header">
+      <h2 style="font-size: 1.0625rem; font-weight: 600; color: #e4e4ef;">Phase 2: Right Hardware</h2>
+      <p style="font-size: 0.8125rem; color: #52525b; margin-top: 6px;">45 minutes &middot; 4 jobs, 2 successful</p>
+    </div>
+    <div class="section-card-body">
+      <table>
+        <tr><th>Job</th><th>Task</th><th>Time</th><th>Result</th></tr>
+        <tr>
+          <td class="mono" style="color: #a5b4fc;">#23</td>
+          <td style="color: #e4e4ef;">SFT (BF16)</td>
+          <td class="mono">71s</td>
+          <td><span class="badge badge-emerald" style="font-size: 9px; padding: 2px 8px;">OK</span></td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: #a5b4fc;">#24</td>
+          <td style="color: #e4e4ef;">GRPO v1</td>
+          <td class="mono">59s</td>
+          <td><span class="badge badge-red" style="font-size: 9px; padding: 2px 8px;">list.lower()</span></td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: #a5b4fc;">#25</td>
+          <td style="color: #e4e4ef;">GRPO v2</td>
+          <td class="mono">57s</td>
+          <td><span class="badge badge-red" style="font-size: 9px; padding: 2px 8px;">list.to()</span></td>
+        </tr>
+        <tr>
+          <td class="mono" style="color: #a5b4fc;">#26</td>
+          <td style="color: #e4e4ef;">GRPO v3</td>
+          <td class="mono">8:12</td>
+          <td><span class="badge badge-emerald" style="font-size: 9px; padding: 2px 8px;">OK</span></td>
+        </tr>
+      </table>
+      <div class="callout callout-emerald" style="margin-top: 1.25rem;">
+        <strong style="color: #34d399;">Key insight:</strong> If a model can't be quantized without architecture bugs, don't quantize it. Single B200 BF16 eliminates all multi-GPU + quantization + gradient checkpoint issues.
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- GRPO Reward Functions -->
+<div class="section-title">GRPO Reward Scores (Final Step)</div>
+<div class="section-card" style="margin-bottom: 3rem;">
+  <div class="section-card-body">
+    <p style="font-size: 0.875rem; color: #71717a; margin-bottom: 1.5rem;">
+      6 rule-based reward functions scored each of 4 generated completions at step 12:
+    </p>
+    <div>
+      <div class="reward-row">
+        <div class="reward-label">criteria_awareness</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 95%; background: linear-gradient(90deg, #10b981, #34d399);"></div></div>
+        <div class="reward-value" style="color: #34d399;">0.95</div>
+      </div>
+      <div class="reward-row">
+        <div class="reward-label">evidence_reasoning</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 61%; background: linear-gradient(90deg, #3b82f6, #60a5fa);"></div></div>
+        <div class="reward-value" style="color: #60a5fa;">0.61</div>
+      </div>
+      <div class="reward-row">
+        <div class="reward-label">domain_correctness</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 45%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);"></div></div>
+        <div class="reward-value" style="color: #a78bfa;">0.45</div>
+      </div>
+      <div class="reward-row">
+        <div class="reward-label">length</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 30%; background: linear-gradient(90deg, #6366f1, #818cf8);"></div></div>
+        <div class="reward-value" style="color: #818cf8;">0.30</div>
+      </div>
+      <div class="reward-row">
+        <div class="reward-label">structure</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 2%; background: #ef4444;"></div></div>
+        <div class="reward-value" style="color: #f87171;">0.00</div>
+      </div>
+      <div class="reward-row">
+        <div class="reward-label">config_format</div>
+        <div class="reward-track"><div class="reward-fill" style="width: 2%; background: #ef4444;"></div></div>
+        <div class="reward-value" style="color: #f87171;">0.00</div>
+      </div>
+    </div>
+    <div class="callout callout-amber">
+      <strong>Why structure &amp; config_format = 0:</strong> Qwen3.6 generates in "thinking mode" (numbered reasoning)
+      rather than <code>## Approach</code> / <code>## Config Changes</code> markdown. Reward functions need
+      tuning to match the model's natural style &mdash; or a second GRPO pass with adjusted patterns.
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Full Timeline -->
+<div class="section-title">Complete Job Timeline (26 submissions)</div>
+<div class="section-card" style="margin-bottom: 3rem;">
+  <div class="section-card-body" style="max-height: 580px; overflow-y: auto;">
+    <div class="timeline">
+      <div class="tl-item"><span class="tl-time">#01</span> gpu/L40S &mdash; Initial script test<div class="tl-error">Script path wrong</div></div>
+      <div class="tl-item"><span class="tl-time">#02</span> gpu/L40S &mdash; Fix path, run again<div class="tl-error">TRL API: max_seq_length not recognized</div></div>
+      <div class="tl-item"><span class="tl-time">#03</span> gpu/L40S &mdash; Quick fix attempt<div class="tl-error">CANCELLED: Wrong fix</div></div>
+      <div class="tl-item"><span class="tl-time">#04</span> gpu/L40S &mdash; Fixed TRL API (max_length)<div class="tl-error">FP8 quantization not valid for training</div></div>
+      <div class="tl-item"><span class="tl-time">#05</span> gpu/L40S &mdash; Switch to 4-bit NF4<div class="tl-error">prepare_model_for_kbit_training import path</div></div>
+      <div class="tl-item"><span class="tl-time">#06</span> gpu/L40S &mdash; Fix import<div class="tl-error">Another import issue (kernels package)</div></div>
+      <div class="tl-item"><span class="tl-time">#07</span> gpu/L40S &mdash; QLoRA 4-bit standard recipe<div class="tl-error">SFTConfig keyword mismatch (TRL 1.3.0)</div></div>
+      <div class="tl-item"><span class="tl-time">#08</span> gpu/L40S &mdash; Try FP8 quantization<div class="tl-error">validate_quantization_for_training rejects FP8</div></div>
+      <div class="tl-item"><span class="tl-time">#09</span> gpu/L40S &mdash; 4-bit, mem=64G<div class="tl-error">OUT_OF_MEMORY: 67 GB model through CPU</div></div>
+      <div class="tl-item"><span class="tl-time">#10</span> gpu/L40S &mdash; 4-bit, mem=128G<div class="tl-error">GPU OOM in prepare_model_for_kbit_training</div></div>
+      <div class="tl-item"><span class="tl-time">#11</span> gpu/L40S &mdash; Remove prepare_model<div class="tl-error">"Some modules dispatched on CPU"</div></div>
+      <div class="tl-item"><span class="tl-time">#12</span> gpu/L40S &mdash; device_map=auto<div class="tl-error">NLL loss assertion (t &ge; 0 &amp;&amp; t &lt; n_classes)</div></div>
+      <div class="tl-item"><span class="tl-time">#13</span> gpu/L40S &mdash; grad_ckpt=False<div class="tl-error">Same NLL assertion</div></div>
+      <div class="tl-item"><span class="tl-time">#14</span> gpu/L40S &mdash; Label validation logging<div class="tl-error">Labels valid! Bug is elsewhere.</div></div>
+      <div class="tl-item"><span class="tl-time">#15</span> gpu/L40S &mdash; FP8 again (install kernels)<div class="tl-error">ImportError: finegrained-fp8 not found</div></div>
+      <div class="tl-item"><span class="tl-time">#16</span> gpu/L40S &mdash; Monkey-patch FP8<div class="tl-error">from...import caches fn ref, patch fails</div></div>
+      <div class="tl-item"><span class="tl-time">#17</span> gpu/L40S &mdash; Double-patch<div class="tl-error">"no autograd formula for fp8_matmul" &mdash; dead end</div></div>
+      <div class="tl-item"><span class="tl-time">#18</span> gpu/L40S &mdash; 4-bit, grad_ckpt off<div class="tl-error">Still NLL assertion on multi-GPU</div></div>
+      <div class="tl-item"><span class="tl-time">#19</span> gpu/1&times;L40S &mdash; Single GPU<div class="tl-error">OOM during quant load (&gt;44 GB peak)</div></div>
+      <div class="tl-item"><span class="tl-time">#20</span> gpu/L40S &mdash; Different device_map<div class="tl-error">Same fundamental issue</div></div>
+      <div class="tl-item"><span class="tl-time">#21</span> gpu/2&times;L40S &mdash; grad_ckpt=False<div class="tl-error">Forward OK, backward OOM on GPU 1</div></div>
+      <div class="tl-item"><span class="tl-time">#22</span> gpu/2&times;L40S &mdash; grad_ckpt=True<div class="tl-error">NLL returns. ckpt + multi-GPU = confirmed bug.</div></div>
+      <div class="tl-item pivot"><span class="tl-time">PIVOT</span> <strong style="color: #fbbf24;">Switch to fat partition (B200, 192 GB)</strong><div style="font-size: 0.8125rem; color: #92400e; margin-top: 4px;">Linear attention + grad checkpointing + multi-GPU = corrupted logits. Single B200 eliminates all three.</div></div>
+      <div class="tl-item success"><span class="tl-time">#23</span> fat/B200 &mdash; BF16, single GPU<div class="tl-success">&#10003; SFT COMPLETE in 71s. Loss 2.57 &rarr; 1.29. Token acc 50% &rarr; 68%.</div></div>
+      <div class="tl-item"><span class="tl-time">#24</span> fat/B200 &mdash; GRPO v1<div class="tl-error">TRL passes completions as list[list[dict]]</div></div>
+      <div class="tl-item"><span class="tl-time">#25</span> fat/B200 &mdash; GRPO v2<div class="tl-error">reward_weights must be in GRPOConfig</div></div>
+      <div class="tl-item success"><span class="tl-time">#26</span> fat/B200 &mdash; GRPO v3 (final)<div class="tl-success">&#10003; GRPO COMPLETE in 494s. 12 prompts &times; 4 gens. All rewards scoring.</div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- HPC Observations -->
+<div class="section-title">HPC Cluster Observations</div>
+<div class="obs-grid" style="margin-bottom: 3rem;">
+  <div class="obs-card">
+    <h4>Fat partition is empty</h4>
+    <p>64 B200 GPUs (8 nodes &times; 8). Every job started in &lt;15 seconds. Zero queue wait. Most users haven't migrated from L40S yet.</p>
+  </div>
+  <div class="obs-card">
+    <h4>B200 = 183 GB, not 192 GB</h4>
+    <p>~9 GB reserved for ECC + system overhead. Still 43 GB headroom beyond GRPO peak (140 GB).</p>
+  </div>
+  <div class="obs-card">
+    <h4>Model loads in 14 seconds</h4>
+    <p>1,026 weight shards at 73/sec. NVMe storage provides excellent sequential bandwidth. No I/O bottleneck.</p>
+  </div>
+  <div class="obs-card">
+    <h4>No flash-linear-attention</h4>
+    <p>"fast path not available" warning. Using torch fallback. Installing <code>fla</code> could give 2-3&times; generation speedup.</p>
+  </div>
+  <div class="obs-card">
+    <h4>Same node every time</h4>
+    <p>All 4 fat jobs landed on same node. Slurm warm-node preference means weights may stay in OS page cache.</p>
+  </div>
+  <div class="obs-card">
+    <h4>~50 tok/s generation</h4>
+    <p>4&times;512 tokens in ~30s. Reasonable for 35B BF16 without FlashAttention or speculative decoding.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- Next Steps -->
+<div class="section-title">Next Steps</div>
+<div class="section-card">
+  <div class="section-card-body">
+    <ul class="next-steps-list">
+      <li>
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>Merge adapters into base model</strong>
+          <div class="step-meta"><code>model.merge_and_unload()</code> &middot; ~10 min &middot; No dependencies</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>Deploy as vLLM inference endpoint</strong>
+          <div class="step-meta">Requires step 1 &middot; Serve job on fat partition &middot; ~30 min to set up</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <strong>Side-by-side evaluation: fine-tuned vs base</strong>
+          <div class="step-meta">Requires step 1 &middot; Score both on held-out prompts &middot; ~30 min</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <strong>Tune reward functions for model's natural style</strong>
+          <div class="step-meta">Structure/config_format scored 0 due to thinking-mode output. Adjust patterns, re-run GRPO.</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <strong>Data augmentation (12 pairs &rarr; 50+)</strong>
+          <div class="step-meta">Generate synthetic SFT pairs from fine-tuned model + manual curation</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <strong>Install flash-linear-attention for faster inference</strong>
+          <div class="step-meta">Optional &middot; 2-3&times; generation speedup &middot; <code>pip install fla</code></div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  26 Slurm jobs &middot; 0.82 GPU-hours &middot; 22 failures &rarr; 2 successful training runs<br>
+  <span style="color: #27272a;">Qwen3.6-35B-A3B &middot; NVIDIA B200 192 GB &middot; LoRA + GRPO</span>
+</div>
+
+</div>
+</body>
+</html>
