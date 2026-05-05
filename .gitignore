@@ -1,40 +1,29 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
 *.egg-info/
-.eggs/
-dist/
-build/
-
-# Virtual environments
-.venv/
 venv/
-env/
+.venv/
 
-# Model weights (too large for git)
-models/
+# Data (large files stay on HPC)
+data/*.jsonl
+data/*.json
+!data/.gitkeep
+
+# Model weights (never commit)
 *.safetensors
 *.bin
+*.gguf
 *.pt
-*.pth
 
-# Training outputs
-output/
-logs/
-*.out
-*.err
+# PDF docs (large, downloaded separately)
+docs/*.pdf
+
+# Environment
+.env
+*.log
 
 # OS
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# uv
-.python-version
-uv.lock

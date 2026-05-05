@@ -1,0 +1,6 @@
+# WisprFlow Windows Client dependencies
+pyaudio>=0.2.14
+keyboard>=0.13.5
+requests>=2.31
+pyperclip>=1.8
+pywin32>=306
