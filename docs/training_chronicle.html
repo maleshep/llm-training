@@ -574,9 +574,9 @@
     <div class="subtitle">Qwen3.6-35B-A3B &middot; oneHPC fat partition &middot; April 30, 2026</div>
   </div>
   <div style="display: flex; gap: 10px; align-items: center;">
-    <span class="badge badge-amber">
-      <span class="badge-dot" style="background: #f59e0b;"></span>
-      Trained &middot; Not Serving
+    <span class="badge badge-emerald">
+      <span class="badge-dot" style="background: #10b981;"></span>
+      Trained &middot; Serving
     </span>
   </div>
 </header>
@@ -988,22 +988,22 @@
 <div class="section-card">
   <div class="section-card-body">
     <div class="callout callout-emerald" style="margin-bottom: 1.5rem; margin-top: 0;">
-      <strong style="color: #34d399;">Status:</strong> Both adapters (SFT + GRPO) are trained and saved on cluster storage.
-      The model is <strong>not</strong> serving anywhere. Next step is merge + deploy as a vLLM endpoint, then wire into meta-harness.
+      <strong style="color: #34d399;">Status:</strong> Fine-tuned model is <strong>live and serving</strong> on demu4xfat005:8100 (Job 1822552).
+      Adapters merged 2026-05-06, deployed same day. Pi CLI connects transparently.
     </div>
     <ul class="next-steps-list">
-      <li>
-        <div class="step-num">1</div>
+      <li style="opacity: 0.5;">
+        <div class="step-num" style="background: #10b981; color: #fff;">&#10003;</div>
         <div class="step-content">
-          <strong>Merge adapters into base model</strong>
-          <div class="step-meta"><code>model.merge_and_unload()</code> &middot; ~10 min &middot; No dependencies</div>
+          <strong style="text-decoration: line-through;">Merge adapters into base model</strong>
+          <div class="step-meta">Done 2026-05-06 &middot; Job 1822232 &middot; 1m33s &middot; 69.3 GB BF16</div>
         </div>
       </li>
-      <li>
-        <div class="step-num">2</div>
+      <li style="opacity: 0.5;">
+        <div class="step-num" style="background: #10b981; color: #fff;">&#10003;</div>
         <div class="step-content">
-          <strong>Deploy as vLLM inference endpoint on fat partition</strong>
-          <div class="step-meta">Requires step 1 &middot; <code>--qos=7d</code> serve job &middot; ~30 min to set up</div>
+          <strong style="text-decoration: line-through;">Deploy as SGLang inference endpoint</strong>
+          <div class="step-meta">Done 2026-05-06 &middot; Job 1822552 &middot; B200 &middot; 33 tok/s &middot; port 8100</div>
         </div>
       </li>
       <li>
@@ -1045,10 +1045,56 @@
   </div>
 </div>
 
+<!-- Deployment Section -->
+<div class="section">
+  <h2 class="section-title"><span class="section-icon">&#128640;</span> Deployment (2026-05-06)</h2>
+  <div class="card">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+      <div>
+        <h3 style="color: #34d399; font-size: 14px; margin-bottom: 8px;">Adapter Merge (Job 1822232)</h3>
+        <table style="font-size: 12px; width: 100%;">
+          <tr><td style="color: #71717a; padding: 2px 0;">Node</td><td class="mono">demu4xfat005 (B200)</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Runtime</td><td class="mono">1m 33s</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Base load</td><td class="mono">9.7s (693 shards)</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">SFT merge</td><td class="mono">1.7s</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">GRPO merge</td><td class="mono">0.4s</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Save</td><td class="mono">74.0s (21 shards, 69.3 GB)</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3 style="color: #818cf8; font-size: 14px; margin-bottom: 8px;">Serving (Job 1822552)</h3>
+        <table style="font-size: 12px; width: 100%;">
+          <tr><td style="color: #71717a; padding: 2px 0;">Engine</td><td class="mono">SGLang 0.5.9</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Model VRAM</td><td class="mono">65.49 GB (BF16)</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">KV Cache</td><td class="mono">49.66 GB (K+V)</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Throughput</td><td class="mono">33 tok/s</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Context</td><td class="mono">65,536 tokens</td></tr>
+          <tr><td style="color: #71717a; padding: 2px 0;">Endpoint</td><td class="mono">:8100/v1/chat/completions</td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top: 1.5rem; padding: 12px 16px; background: #18181b; border-radius: 8px; border: 1px solid #27272a;">
+      <div style="font-size: 11px; color: #71717a; margin-bottom: 6px;">CONNECT</div>
+      <code style="font-size: 12px; color: #a5b4fc;">ssh -L 8100:demu4xfat005:8100 -N M316235@onehpc.merckgroup.com</code><br>
+      <code style="font-size: 12px; color: #6ee7b7;">omp --model hpc-qwen/qwen3.6-35b-a3b</code>
+    </div>
+    <div style="margin-top: 1rem; padding: 12px 16px; background: #18181b; border-radius: 8px; border: 1px solid #27272a;">
+      <div style="font-size: 11px; color: #71717a; margin-bottom: 6px;">COMPATIBILITY ISSUES RESOLVED</div>
+      <div style="font-size: 12px; color: #a1a1aa; line-height: 1.8;">
+        &#9679; Slurm requires explicit GPU type: <code>--gres=gpu:b200:1</code><br>
+        &#9679; PEFT 0.19.1 &rarr; downgrade to 0.15.2 (WeightConverter API mismatch)<br>
+        &#9679; Merged model config.json: copy base model&rsquo;s config (SGLang needs multimodal wrapper)<br>
+        &#9679; Transformers 5.8 breaks SGLang &rarr; keep serving venv at 4.57.1<br>
+        &#9679; FlashInfer B200 kernel JIT: ~8 min first-time compilation + <code>--disable-cuda-graph</code>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Footer -->
 <div class="footer">
-  Generated 2026-04-30 &middot; 26 Slurm jobs &middot; 0.82 GPU-hours &middot; 2 successful training runs<br>
-  <span style="color: #27272a;">Qwen3.6-35B-A3B &middot; oneHPC fat partition &middot; NVIDIA B200 192 GB</span>
+  Updated 2026-05-06 &middot; 32 Slurm jobs &middot; 0.92 GPU-hours &middot; 2 training + 1 merge + 1 serve<br>
+  <span style="color: #27272a;">Qwen3.6-35B-A3B-MMM &middot; oneHPC fat partition &middot; NVIDIA B200 192 GB &middot; Serving on port 8100</span>
 </div>
 
 </div>
