@@ -6,8 +6,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=128G
-#SBATCH --gres=gpu:1
-#SBATCH --qos=short
+#SBATCH --gres=gpu:b200:1
+#SBATCH --qos=3h
 #SBATCH --time=0-01:00:00
 #SBATCH --output=/shared/project/tdr-mmm-hpc/llm/logs/merge_%j.out
 #SBATCH --error=/shared/project/tdr-mmm-hpc/llm/logs/merge_%j.err
@@ -27,7 +27,7 @@ LLM_DIR=$PROJECT/llm
 TRAINING_DIR=$LLM_DIR/training
 
 module load cuda/12.9.0
-source $TRAINING_DIR/training-venv/bin/activate
+source $LLM_DIR/training-venv/bin/activate
 
 echo "=== ADAPTER MERGE ==="
 echo "NODE=$(hostname)"

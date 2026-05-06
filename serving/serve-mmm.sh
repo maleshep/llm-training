@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --account=tdr-mmm-hpc
 #SBATCH --job-name=llm-serve-mmm
-#SBATCH --partition=gpu
+#SBATCH --partition=fat
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=48G
-#SBATCH --gres=gpu:l40s:1
+#SBATCH --mem=128G
+#SBATCH --gres=gpu:b200:1
 #SBATCH --qos=3d
 #SBATCH --time=3-00:00:00
 #SBATCH --output=/shared/project/tdr-mmm-hpc/llm/logs/serve_mmm_%j.out
