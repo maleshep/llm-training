@@ -1091,10 +1091,127 @@
   </div>
 </div>
 
+<!-- Step 3: Evaluation -->
+<div class="step" style="border-color: #8b5cf6;">
+  <div class="step-header">
+    <div class="step-number" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">3</div>
+    <div class="step-title">Evaluation: Qwen MMM vs Sonnet 4.6</div>
+    <span class="badge" style="background: #1e1b4b; color: #a78bfa; border-color: #4c1d95;">Judged by Opus 4.6</span>
+  </div>
+
+  <p style="color: #a1a1aa; margin-bottom: 1.5rem;">
+    27-prompt golden test dataset across 10 categories. Blind evaluation with position-randomized responses. 20/27 tests completed (7 lost to server disconnect).
+  </p>
+
+  <!-- Results grid -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem;">
+    <!-- Sonnet -->
+    <div style="background: #18181b; border-radius: 12px; padding: 20px; border: 1px solid #27272a;">
+      <div style="font-size: 11px; color: #71717a; margin-bottom: 8px;">SONNET 4.6 (GENERAL)</div>
+      <div style="font-size: 36px; font-weight: 700; color: #818cf8;">30.0<span style="font-size: 14px; color: #52525b;">/40</span></div>
+      <div style="font-size: 14px; color: #818cf8; margin-top: 4px;">16 wins (80%)</div>
+      <table style="margin-top: 12px; font-size: 12px; width: 100%;">
+        <tr><td style="color: #71717a; padding: 2px 0;">Accuracy</td><td class="mono" style="text-align:right;">7.6</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Completeness</td><td class="mono" style="text-align:right;">8.1</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Evidence</td><td class="mono" style="text-align:right;">6.5</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Expertise</td><td class="mono" style="text-align:right;">7.8</td></tr>
+      </table>
+    </div>
+    <!-- Qwen -->
+    <div style="background: #18181b; border-radius: 12px; padding: 20px; border: 1px solid #27272a;">
+      <div style="font-size: 11px; color: #71717a; margin-bottom: 8px;">QWEN MMM (FINE-TUNED)</div>
+      <div style="font-size: 36px; font-weight: 700; color: #f59e0b;">25.9<span style="font-size: 14px; color: #52525b;">/40</span></div>
+      <div style="font-size: 14px; color: #f59e0b; margin-top: 4px;">4 wins (20%)</div>
+      <table style="margin-top: 12px; font-size: 12px; width: 100%;">
+        <tr><td style="color: #71717a; padding: 2px 0;">Accuracy</td><td class="mono" style="text-align:right;">6.8</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Completeness</td><td class="mono" style="text-align:right;">7.2</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Evidence</td><td class="mono" style="text-align:right;">5.3</td></tr>
+        <tr><td style="color: #71717a; padding: 2px 0;">Expertise</td><td class="mono" style="text-align:right;">6.6</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Category bars -->
+  <div style="margin-bottom: 1.5rem;">
+    <div style="font-size: 11px; color: #71717a; margin-bottom: 8px;">CATEGORY BREAKDOWN</div>
+    <div style="display: grid; gap: 6px; font-size: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Config generation</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sonnet 3-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Diagnostics</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sonnet 3-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Optimization</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sonnet 3-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">General MMM</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sonnet 3-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Scenario planning</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sonnet 2-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Technical constraints</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 100%; background: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #000;">Qwen 2-0</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Channel attribution</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 50%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">S</div>
+          <div style="width: 50%; background: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #000;">Q</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 130px; color: #a1a1aa;">Gate failures</span>
+        <div style="flex: 1; height: 18px; background: #27272a; border-radius: 4px; overflow: hidden; display: flex;">
+          <div style="width: 50%; background: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 10px;">S</div>
+          <div style="width: 50%; background: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #000;">Q</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key finding -->
+  <div style="padding: 16px; background: linear-gradient(135deg, #1e1b4b 0%, #18181b 100%); border-radius: 10px; border: 1px solid #4c1d95;">
+    <div style="font-size: 11px; color: #a78bfa; margin-bottom: 8px;">KEY FINDING</div>
+    <div style="font-size: 13px; color: #e2e8f0; line-height: 1.7;">
+      Fine-tuning on 12 examples embedded <strong style="color: #f59e0b;">project-specific knowledge</strong> (version bugs, locked parameters, confounding patterns) but couldn't match Sonnet 4.6's <strong style="color: #818cf8;">reasoning and presentation quality</strong>. The Qwen model generates in think-mode &mdash; correct knowledge buried in unpolished, stream-of-consciousness output. Value proposition: <strong>domain knowledge complement</strong> via RAG, not full replacement.
+    </div>
+  </div>
+
+  <!-- Improvement roadmap -->
+  <div style="margin-top: 1rem; padding: 12px 16px; background: #18181b; border-radius: 8px; border: 1px solid #27272a;">
+    <div style="font-size: 11px; color: #71717a; margin-bottom: 6px;">IMPROVEMENT ROADMAP</div>
+    <div style="font-size: 12px; color: #a1a1aa; line-height: 1.8;">
+      &#9679; Scale SFT data from 12 to 100+ examples with polished assistant responses<br>
+      &#9679; DPO training: Sonnet answers (chosen) vs Qwen think-dumps (rejected)<br>
+      &#9679; System prompt engineering for structured output during inference<br>
+      &#9679; Consider RAG architecture: Sonnet 4.6 + project docs retrieval
+    </div>
+  </div>
+</div>
+
 <!-- Footer -->
 <div class="footer">
-  Updated 2026-05-06 &middot; 32 Slurm jobs &middot; 0.92 GPU-hours &middot; 2 training + 1 merge + 1 serve<br>
-  <span style="color: #27272a;">Qwen3.6-35B-A3B-MMM &middot; oneHPC fat partition &middot; NVIDIA B200 192 GB &middot; Serving on port 8100</span>
+  Updated 2026-05-06 &middot; 32 Slurm jobs &middot; 0.92 GPU-hours &middot; 2 training + 1 merge + 1 serve + 1 eval<br>
+  <span style="color: #27272a;">Qwen3.6-35B-A3B-MMM &middot; oneHPC fat partition &middot; NVIDIA B200 192 GB &middot; Evaluated vs Sonnet 4.6</span>
 </div>
 
 </div>

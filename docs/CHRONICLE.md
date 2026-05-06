@@ -473,3 +473,69 @@ Response: Here's a thinking process:
 ```
 
 This is exactly the kind of structured, domain-aware reasoning we trained for.
+
+---
+
+## Evaluation: Qwen MMM vs Sonnet 4.6 (2026-05-06)
+
+### Setup
+
+- **Golden test dataset**: 27 prompts across 10 categories (diagnostics, config generation, optimization, gate failures, channel attribution, technical constraints, scenario planning, general MMM, Bayesian priors, debugging, methodology, production)
+- **Models**: Sonnet 4.6 (via Uptimize Bedrock) vs Qwen3.6-35B-A3B-MMM (fine-tuned, via SGLang on B200)
+- **Judge**: Opus 4.6 (blind evaluation, position-randomized to avoid order bias)
+- **Dimensions**: Accuracy, Completeness, Evidence Quality, Domain Expertise (each /10, total /40)
+
+### Results Summary
+
+| Metric | Sonnet 4.6 | Qwen MMM |
+|--------|-----------|----------|
+| Wins | 16 (80%) | 4 (20%) |
+| Avg Score | 30.0/40 | 25.9/40 |
+| Accuracy | 7.6/10 | 6.8/10 |
+| Completeness | 8.1/10 | 7.2/10 |
+| Evidence | 6.5/10 | 5.3/10 |
+| Expertise | 7.8/10 | 6.6/10 |
+
+*Note: 7/27 tests lost to Qwen server disconnect (SSH tunnel dropped after test 21). Results based on 20 completed head-to-head comparisons.*
+
+### Where Qwen Wins
+
+Qwen beat Sonnet on **project-specific knowledge** — exactly what fine-tuning should teach:
+
+| Test | Category | Qwen Score | Sonnet Score | Why Qwen Won |
+|------|----------|-----------|-------------|--------------|
+| version-01 | technical_constraints | 21 | 17 | Knew about pymc-marketing 0.18.0 vs 0.19.x (PR #2293) |
+| version-02 | technical_constraints | 28 | 26 | Understood locked parameters and their specific rationale |
+| channel-02 | channel_attribution | 28 | 21 | Correctly identified cross-sectional confounding in F2F correlation |
+| gate-02 | gate_failures | 27 | 25 | Better interpretation of F2F yellow zone with project context |
+
+### Where Sonnet Dominates
+
+Sonnet won on reasoning quality, structure, and actionability:
+
+- **Config generation** (3-0): Sonnet provides complete, executable code examples with staged implementation plans
+- **General MMM knowledge** (3-0): More polished educational explanations
+- **Optimization** (3-0): Better causal reasoning and diagnostic workflows
+- **Scenario planning** (2-0): Stronger uncertainty quantification and practical recommendations
+
+### Root Cause Analysis
+
+The judge repeatedly noted the same pattern:
+
+> *"Model [Qwen] is presented as raw thinking/planning that gets cut off... an unfinished outline rather than a complete response"*
+
+> *"Model [Qwen] shows truncated thinking process, while Model [Sonnet] delivers polished, actionable response"*
+
+**Diagnosis**: The GRPO training (with format-agnostic rewards) taught the model to *think well* but not to *present answers well*. The model generates in think-mode — using `<think>` blocks and planning structures — which embeds correct project-specific knowledge but wraps it in unpolished, stream-of-consciousness output.
+
+### Improvement Roadmap
+
+1. **More SFT data**: Current training set is only 12 examples (+ 55 augmented). Need 100+ diverse examples with polished assistant responses
+2. **Response format training**: Add SFT examples that model well-structured output (## Approach / ## Reasoning / ## Config Changes) without think-mode rambling
+3. **DPO on think-vs-answer pairs**: Use the evaluation results as DPO training data — Sonnet's polished answers as "chosen", Qwen's thinking dumps as "rejected"
+4. **System prompt engineering**: The model may benefit from explicit "deliver a complete, actionable answer" instructions during inference
+5. **Longer context**: Many Qwen responses hit the max_tokens (1500) limit — the think-mode overhead consumes tokens that should go to the answer
+
+### Key Takeaway
+
+Fine-tuning 35B params on 12 domain-specific examples produced a model that **knows project-specific facts** (pymc-marketing version bugs, locked parameters, confounding patterns) but **can't compete with Sonnet 4.6's reasoning and presentation quality**. The value of the fine-tuned model is as a **domain knowledge complement**, not a replacement. The optimal architecture may be RAG (retrieval-augmented Sonnet with project docs) rather than full fine-tuning.
