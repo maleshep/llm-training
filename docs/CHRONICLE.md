@@ -397,3 +397,79 @@ model.save_pretrained("merged-mmm-agent/")
 4. **Rule-based rewards are sufficient for domain-specific GRPO.** We achieved 0.95 gate awareness without needing a trained reward model. The key insight: domain knowledge can be encoded as regex patterns and keyword matching.
 
 5. **The HPC fat partition is a hidden gem.** B200 GPUs with 192GB VRAM, instant scheduling, and no queue wait. Most users are still on the L40S partition, leaving fat nodes idle.
+
+---
+
+## Deployment: Merge & Serve (2026-05-06)
+
+**Session outcome**: Fine-tuned model deployed end-to-end. The trained model is now serving on port 8100.
+
+### Adapter Merge (Job 1822232)
+
+```
+Node: demu4xfat005 (B200, 183GB VRAM)
+Runtime: 1m33s total
+  - Base model load: 9.7s (693 weight shards → 69.3 GB BF16)
+  - SFT adapter merge: 1.7s
+  - GRPO adapter merge: 0.4s
+  - Save merged model: 74.0s (21 shards × 4GB each)
+Output: /shared/project/tdr-mmm-hpc/llm/models/qwen3.6-35b-a3b-mmm/ (69.3 GB)
+```
+
+### Serving (Job 1822552)
+
+```
+Node: demu4xfat005 (B200)
+Engine: SGLang 0.5.9
+Model: qwen3.6-35b-a3b-mmm (BF16, 65.49 GB VRAM)
+Port: 8100
+Throughput: 33 tok/s (no CUDA graph)
+Context: 65536 tokens
+KV Cache: 24.83 GB K + 24.83 GB V
+Mamba Cache: 43.65 GB (hybrid linear attention state)
+Available VRAM after load: 17.65 GB
+```
+
+### Compatibility Issues Discovered
+
+| Issue | Root Cause | Fix |
+|-------|-----------|-----|
+| `--gres=gpu:1` rejected | oneHPC requires explicit GPU type | `--gres=gpu:b200:1` |
+| `--qos=short` invalid | QoS names are `3h`, `1d`, `3d`, `7d`, `14d` | `--qos=3h` |
+| DOS line endings | Windows `scp` doesn't convert | `sed -i 's/\r$//'` on HPC |
+| PEFT 0.19.1 `WeightConverter` error | `distributed_operation` kwarg incompatible with transformers 5.7.0 | Downgrade to PEFT 0.15.2 |
+| `Qwen3_5MoeForCausalLM` not recognized by SGLang | Newer transformers saves with `_text` suffix architecture class | Copy base model's `config.json` (uses `Qwen3_5MoeForConditionalGeneration`) |
+| `transformers 5.8.0` breaks SGLang config parsing | `get_hf_text_config` assertion fails on new config format | Downgrade serving venv to transformers 4.57.1 |
+| FlashInfer autotune hangs on B200 | First-time kernel JIT compilation for new GPU architecture | Wait ~8min + `--disable-cuda-graph` + `--attention-backend triton` |
+
+### Key Insight: Config.json Matters for Serving
+
+When `transformers 5.7.0` saves a merged model, it writes:
+```json
+{"model_type": "qwen3_5_moe_text", "architectures": ["Qwen3_5MoeForCausalLM"]}
+```
+
+But SGLang 0.5.9's `EntryClass` only registers `Qwen3_5MoeForConditionalGeneration` (the multimodal wrapper). The fix: copy the base model's original `config.json` into the merged model directory. The weights are identical architecture — same layers, same shapes — just with LoRA deltas baked in. The config just tells SGLang *how to load them*.
+
+### Production Path (TODO)
+
+The BF16 model on B200 works but wastes an expensive training GPU. The proper path:
+1. Quantize merged model to FP8 → `models/qwen3.6-35b-a3b-mmm-fp8/` (~18 GB)
+2. Serve on L40S (gpu partition, 48 GB) — frees B200 for training
+3. Pre-build FlashInfer kernels for L40S (already cached from previous FP8 serving)
+
+### Validation Response
+
+The fine-tuned model immediately demonstrated MMM domain knowledge:
+```
+Prompt: "F2F plausibility at 70% and email attribution at 18%. Trust score is 33. What should we change?"
+
+Response: Here's a thinking process:
+1. Analyze User Input:
+   - F2F plausibility: 70% (Face-to-Face interaction plausibility score)
+   - Email attribution: 18% (Email channel attribution share)
+   - Trust score: 33 (composite metric indicating model reliability/validity)
+   ...
+```
+
+This is exactly the kind of structured, domain-aware reasoning we trained for.
